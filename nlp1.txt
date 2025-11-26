@@ -1,0 +1,108 @@
+# ======================================
+# UNIVERSAL NLP PRACTICAL FILE
+# Covers: Scraping, Preprocessing, TF-IDF,
+# POS, NER, LDA, N-grams, Sentiment, LangID
+# ======================================
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import re
+import stanza
+import spacy
+from transformers import pipeline
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+texts = [
+    "I love this product",
+    "Delivery was late",
+    "Quality is average"
+]
+
+# -------------------------------
+# 1. WEB SCRAPING
+# -------------------------------
+url = "https://en.wikipedia.org/wiki/Java_(programming_language)"
+header={"user-agent":"Mozilla/5.0"}
+response = requests.get(url, headers=header)
+soup = BeautifulSoup(response.content, "html.parser")
+tables = soup.find_all("table", "wikitable")
+df = pd.read_html(str(tables))[0]
+print("\nSCRAPED TABLE:\n", df.head())
+
+# -------------------------------
+# 2. BASIC PREPROCESSING
+# -------------------------------
+def clean(t):
+    t = t.lower()
+    t = re.sub(r'[^a-zA-Z\s]', '', t)
+    return t
+
+cleaned = [clean(t) for t in texts]
+
+# -------------------------------
+# 3. TF-IDF
+# -------------------------------
+tfidf = TfidfVectorizer(stop_words='english')
+tfidf_matrix = tfidf.fit_transform(cleaned).toarray()
+print("\nTF-IDF MATRIX:\n", tfidf_matrix)
+
+# -------------------------------
+# 4. N-GRAMS
+# -------------------------------
+bi = CountVectorizer(ngram_range=(2,2))
+X_bi = bi.fit_transform(cleaned)
+print("\nBIGRAMS:\n", bi.get_feature_names_out())
+
+# -------------------------------
+# 5. TOPIC MODELING (LDA)
+# -------------------------------
+vec = CountVectorizer(stop_words='english')
+X = vec.fit_transform(cleaned)
+
+lda = LatentDirichletAllocation(n_components=2)
+lda.fit(X)
+words = vec.get_feature_names_out()
+print("\nTOPICS:")
+for i, topic in enumerate(lda.components_):
+    print([words[j] for j in topic.argsort()[-5:]])
+
+# -------------------------------
+# 6. POS TAGGING (stanza)
+# -------------------------------
+stanza.download('en')
+nlp_pos = stanza.Pipeline("en")
+print("\nPOS TAGGING:")
+for t in texts:
+    doc = nlp_pos(t)
+    for sent in doc.sentences:
+        for word in sent.words:
+            print(word.text, "-->", word.upos)
+
+# -------------------------------
+# 7. NER (spaCy)
+# -------------------------------
+nlp_ner = spacy.load("en_core_web_sm")
+print("\nNER:")
+for t in texts:
+    doc = nlp_ner(t)
+    for ent in doc.ents:
+        print(ent.text, ent.label_)
+
+# -------------------------------
+# 8. LANGUAGE IDENTIFICATION
+# -------------------------------
+lang_model = pipeline("text-classification",
+model="papluca/xlm-roberta-base-language-detection")
+print("\nLANGUAGE DETECTION:")
+for t in texts:
+    print(t, "->", lang_model(t)[0]['label'])
+
+# -------------------------------
+# 9. SENTIMENT ANALYSIS
+# -------------------------------
+sentiment = pipeline("sentiment-analysis")
+print("\nSENTIMENT ANALYSIS:")
+for t in texts:
+    print(t, "->", sentiment(t))
