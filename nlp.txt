@@ -1,0 +1,187 @@
+===========================================
+PRACTICAL 1 — PYTHON BASICS
+===========================================
+# Dictionary + Loop
+dict = {1:'Apple',2:'Orange',3:'Mango'}
+dict[4] = "Guava"
+for k in dict:
+    print(dict[k])
+
+# Nested Pattern
+for i in range(0,10):
+    for j in range(i,10):
+        print(j, end="")
+    print()
+
+
+===========================================
+PRACTICAL 2 — FUNCTIONS, DECORATORS
+===========================================
+import random
+
+def fruitName():
+    mylist=["Apple","Banana","Orange","Mango"]
+    return mylist[random.randint(0,len(mylist)-1)]
+
+def decorative(func):
+    print("Decorative")
+    func()
+    print("Decorative")
+    return decorative
+
+@decorative
+def hello():
+    print("Hello")
+
+
+===========================================
+PRACTICAL 3 — WEB SCRAPING (BeautifulSoup)
+===========================================
+from bs4 import BeautifulSoup
+import requests
+import pandas as pd
+
+url="https://en.wikipedia.org/wiki/Java_(programming_language)"
+header={"user-agent":"Mozilla/5.0"}
+response=requests.get(url,headers=header)
+
+soup=BeautifulSoup(response.content,"html.parser")
+table=soup.find_all("table","wikitable")
+df=pd.read_html(str(table))[0]
+print(df)
+
+
+===========================================
+PRACTICAL 4 — AUDIO TO TEXT (SpeechRecognition)
+===========================================
+from pydub import AudioSegment
+import speech_recognition as sr
+
+recogniser=sr.Recognizer()
+audio=AudioSegment.from_mp3("input.mp3")
+audio.export("converted.wav",format="wav",parameters=["-ac","1"])
+
+def speech_to_text(audio_file, language):
+    with sr.AudioFile(audio_file) as source:
+        audio_source=recogniser.record(source)
+    print(recogniser.recognize_google(audio_source,language=language))
+
+# speech_to_text("converted.wav","en-IN")
+
+
+===========================================
+PRACTICAL 5 — IMAGE OCR (pytesseract)
+===========================================
+from PIL import Image
+import pytesseract
+
+img = Image.open("image.png")
+print(pytesseract.image_to_string(img))
+
+
+===========================================
+PRACTICAL 6 — WHATSAPP CHAT SCRAPING
+===========================================
+import re
+import pandas as pd
+
+pattern=r"^(\\d{2}/\\d{2}/\\d{2}), (\\d{1,2}:\\d{2})(?: - (.*?): (.*))?"
+date=[]; time=[]; user=[]; message=[]
+
+for chat in data:
+    m=re.match(pattern,chat)
+    if m and "<Media omitted>" not in str(m.group(4)):
+        date.append(m.group(1)+":"+m.group(2))
+        time.append(m.group(1))
+        user.append(m.group(3))
+        message.append(m.group(4))
+
+df=pd.DataFrame({"timestamps":date,"date":time,"username":user,"message":message})
+print(df.head())
+
+
+===========================================
+PRACTICAL 7 — POS TAGGING (stanza)
+===========================================
+import stanza
+stanza.download('en')
+nlp = stanza.Pipeline("en")
+
+texts = ["This is a good product", "Delivery was late"]
+
+for t in texts:
+    doc = nlp(t)
+    for sentence in doc.sentences:
+        for word in sentence.words:
+            print(word.text, "-->", word.upos)
+
+
+===========================================
+PRACTICAL 8 — NER (spaCy)
+===========================================
+import spacy
+nlp = spacy.load("en_core_web_sm")
+
+for t in texts:
+    doc = nlp(t)
+    for ent in doc.ents:
+        print(ent.text, ent.label_)
+
+
+===========================================
+PRACTICAL 9 — TF-IDF + N-GRAMS
+===========================================
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+
+texts = [
+    "I love this product",
+    "This product is great and I love it",
+    "The product quality is not good"
+]
+
+tfidf = TfidfVectorizer(stop_words='english')
+matrix = tfidf.fit_transform(texts).toarray()
+print(matrix)
+
+bigram = CountVectorizer(ngram_range=(2,2), stop_words='english')
+X_bi = bigram.fit_transform(texts)
+print("Bigrams:", bigram.get_feature_names_out())
+
+
+===========================================
+PRACTICAL 10 — TOPIC MODELING (LDA)
+===========================================
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+vectorizer = CountVectorizer(stop_words='english')
+X = vectorizer.fit_transform(texts)
+
+lda = LatentDirichletAllocation(n_components=2, random_state=42)
+lda.fit(X)
+
+words = vectorizer.get_feature_names_out()
+for i, topic in enumerate(lda.components_):
+    print("Topic", i+1, ":", [words[j] for j in topic.argsort()[-5:]])
+
+
+===========================================
+PRACTICAL 11 — LANGUAGE IDENTIFICATION
+===========================================
+from transformers import pipeline
+
+lang = pipeline("text-classification",
+model="papluca/xlm-roberta-base-language-detection")
+
+for t in texts:
+    print(t, "->", lang(t)[0]['label'])
+
+
+===========================================
+PRACTICAL 12 — SENTIMENT ANALYSIS
+===========================================
+from transformers import pipeline
+
+sentiment = pipeline("sentiment-analysis")
+for t in texts:
+    print(t, "->", sentiment(t))
